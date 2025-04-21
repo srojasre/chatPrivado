@@ -1,0 +1,150 @@
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #ece5dd;
+    margin: 0;
+    padding: 0;
+  }
+  .chat-container {
+    width: 100%;
+    max-width: 440px;
+    border-radius: 10px;
+    margin: 32px auto;
+    box-shadow: 0 2px 16px #aaa6;
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    min-height: 80vh;
+    overflow: hidden;
+  }
+  header {
+    background: #075e54;
+    color: #fff;
+    padding: 16px;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-title {
+    font-weight: bold;
+    flex: 1;
+  }
+  .username-input {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: none;
+    min-width: 70px;
+    max-width: 110px;
+  }
+  main {
+    flex: 1;
+    padding: 14px;
+    background: #ece5dd;
+    overflow-y: auto;
+  }
+  #messages {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .message {
+    max-width: 70%;
+    margin: 12px 0;
+    padding: 7px 12px 9px 12px;
+    border-radius: 17px;
+    position: relative;
+    display: block;
+    font-size: 1rem;
+    word-break: break-word;
+    box-shadow: 1px 1px 9px #0002;
+    clear: both;
+    animation: popin 0.2s;
+  }
+  @keyframes popin {
+    from {transform: scale(0.9);}
+    to {transform: scale(1);}
+  }
+  .from-me {
+    background-color: #dcf8c6;
+    float: right;
+    border: 1.2px solid #b3e899;
+    text-align: right;
+  }
+  .from-them {
+    background: #fff;
+    border: 1.2px solid #d4d5d9;
+    float: left;
+    text-align: left;
+  }
+  .msg-foot {
+    font-size: 0.78em;
+    color: #888;
+    margin-top: 4px;
+    display: inline-block;
+    vertical-align: bottom;
+  }
+  .status-check, .status-checked {
+    margin-left: 5px;
+    font-weight: bold;
+    font-size: 1.05em;
+  }
+  .status-check {
+    color: #aaa;
+  }
+  .status-checked {
+    color: #02aaff;
+  }
+  .media img, .media video {
+    max-width: 160px;
+    max-height: 120px;
+    border-radius: 10px;
+    border: 1.8px solid #c7c7c7;
+    margin-bottom: 3px;
+    display: block;
+  }
+  .media {
+    margin-bottom: 6px;
+  }
+  footer {
+    background: #f2f2f2;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    border-top: 1.8px solid #ebe6e6;
+  }
+  #form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  #input {
+    flex: 1;
+    border-radius: 6px;
+    padding: 7px;
+    margin-right: 5px;
+    border: 1.7px solid #b1b1b1;
+    font-size: 15px;
+  }
+  #fileInput {
+    border: none;
+  }
+  button[type=submit] {
+    background: #075e54;
+    color: #fff;
+    border: none;
+    padding: 7px 19px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1em;
+  }
+  
+  ::-webkit-scrollbar {
+    width: 7px;
+    background: #ece5dd;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #aabdad6a;
+    border-radius: 5px;
+  }

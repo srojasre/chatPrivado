@@ -2,8 +2,8 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const multer = require("multer");
-const fs = require("fs");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const server = http.createServer(app);
@@ -24,15 +24,13 @@ const upload = multer({ storage });
 app.use(express.static("public"));
 
 app.post('/upload', upload.single('file'), (req, res) => {
-  // Envía sólo el nombre de archivo
   const url = '/uploads/' + req.file.filename;
   res.json({ url, type: req.file.mimetype });
 });
 
 let sockets = [];
-let messages = []; // [{msg,type,filename?,date}] mensajes y/o multimedia
+let messages = []; // {id, from, msg, time, type, status, date}
 
-// ENVÍO POR SOCKET
 io.on("connection", (socket) => {
   if (sockets.length >= 2) {
     socket.emit("full", "Solo se permite una persona conectada además del dueño.");
@@ -41,39 +39,68 @@ io.on("connection", (socket) => {
   }
   sockets.push(socket);
 
-  // Cuando entra alguien, envía mensajes existentes (excepto los viejos)
-  socket.emit("chat history", messages.filter(m=>Date.now()-m.date<24*3600*1000));
+  // Devuelve mensajes recientes
+  socket.emit("chat history", messages.filter(m => Date.now()-m.date<24*3600*1000));
 
-  socket.on("chat message", (msg) => {
-    const data = { msg, type: "text", date: Date.now() };
-    messages.push(data);
-    sockets.forEach(s => { if (s !== socket) s.emit("chat message", data); });
+  // Recibe texto
+  socket.on("chat message", (data) => {
+    // data: {id, msg, from, time}
+    const nuevo = {...data, type: "text", status:"enviado", date: Date.now()};
+    messages.push(nuevo);
+    // self: status enviado; al otro: entregado
+    socket.emit("message status", {id: data.id, status: "enviado"});
+    sockets.forEach(s => {
+      if (s !== socket)
+        s.emit("chat message", {...nuevo, status:"entregado"});
+    });
   });
-  socket.on("media message", (url, type) => {
-    const data = { msg: url, type, date: Date.now() };
-    messages.push(data);
-    sockets.forEach(s => { if (s !== socket) s.emit("chat message", data); });
+
+  // Recibe media (img/video)
+  socket.on("media message", (data) => {
+    // data: {id, url, from, time, mimetype}
+    let type = "other";
+    if (data.mimetype.startsWith("image/")) type = "image";
+    if (data.mimetype.startsWith("video/")) type = "video";
+    const nuevo = {id:data.id, msg:data.url, from:data.from, time:data.time, type, status:"enviado", date: Date.now()};
+    messages.push(nuevo);
+    socket.emit("message status", {id: data.id, status: "enviado"});
+    sockets.forEach(s => {
+      if (s !== socket)
+        s.emit("chat message", {...nuevo, status:"entregado"});
+    });
   });
-  socket.on("disconnect", () => {
+
+  // Marcar como leídos (cuando usuario ve mensajes)
+  socket.on("mark read", ids => {
+    messages.forEach(m => { if(ids.includes(m.id)) m.status="leido"; });
+    // Envía nueva marca de leído al emisor
+    sockets.forEach(s => {
+      if (s !== socket) {
+        ids.forEach(id=>{
+          s.emit("message status", {id, status:"leido"});
+        });
+      }
+    });
+  });
+
+  socket.on("disconnect", ()=>{
     sockets = sockets.filter(s => s !== socket);
   });
 });
 
-// BORRADO AUTOMÁTICO POR TIEMPO 🕒
+// Borrado cada hora (mantén tus archivos limpios)
 setInterval(() => {
-  const threshold = Date.now() - 24*3600*1000;
-  // Borra mensajes y archivos viejos
+  const limit = Date.now() - 24*3600*1000;
   messages = messages.filter(m => {
-    if (m.date < threshold && m.type !== 'text') {
-      // Es archivo; borra físico
-      const fileToDelete = path.join(uploadDir, path.basename(m.msg));
-      fs.unlink(fileToDelete, () => {});
+    if(m.date < limit && (m.type==="image" || m.type==="video")){
+      const file = path.join(uploadDir, path.basename(m.msg));
+      fs.unlink(file, ()=>{});
     }
-    return m.date >= threshold; // Mantiene recientes
+    return m.date >= limit;
   });
-}, 60*60*1000); // limpia cada 1 hora
+}, 60*60*1000);
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`🟢 Servidor escuchando en http://localhost:${PORT}`);
+  console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });
