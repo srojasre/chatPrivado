@@ -1,0 +1,75 @@
+<input id="username" placeholder="Tu nombre" /><br>
+<input type="file" id="fileInput" accept="image/*,video/*" /><br>
+<ul id="messages"></ul>
+<form id="form">
+  <input id="input" autocomplete="off" placeholder="Escribe tu mensaje" /><button>Enviar</button>
+</form>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const username = document.getElementById('username');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const messages = document.getElementById('messages');
+  const fileInput = document.getElementById('fileInput');
+
+  socket.on("full", (msg) => alert(msg));
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    if (input.value && username.value) {
+      const msg = username.value + ": " + input.value;
+      appendMessage({ msg, type: "text" });
+      socket.emit('chat message', msg);
+      input.value = '';
+    }
+  });
+
+  // Al enviar archivo
+  fileInput.addEventListener("change", function() {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch('/upload', {
+      method: 'POST',
+      body: formData
+    }).then(res => res.json())
+      .then(obj => {
+        socket.emit("media message", obj.url, obj.type);
+        appendMessage({ msg: obj.url, type: obj.type });
+      });
+    fileInput.value = "";
+  });
+
+  socket.on('chat message', function(data) {
+    // Puede ser texto o media {msg, type}
+    appendMessage(data);
+  });
+
+  socket.on('chat history', function(list) {
+    // lista de mensajes [{msg,type}]
+    list.forEach(appendMessage);
+  });
+
+  function appendMessage(data) {
+    const item = document.createElement('li');
+    if (!data.type || data.type === "text") {
+      item.textContent = data.msg;
+    } else if (data.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = data.msg;
+      img.style.maxWidth = "150px";
+      item.appendChild(img);
+    } else if (data.type.startsWith('video/')) {
+      const video = document.createElement('video');
+      video.src = data.msg;
+      video.controls = true;
+      video.style.maxWidth = "200px";
+      item.appendChild(video);
+    }
+    messages.appendChild(item);
+    messages.scrollTop = messages.scrollHeight;
+  }
+</script>
